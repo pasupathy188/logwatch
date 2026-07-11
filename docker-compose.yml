@@ -1,0 +1,28 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: logwatch
+      POSTGRES_PASSWORD: logwatch123
+      POSTGRES_DB: logwatch
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  app:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: logwatch
+      DB_PASSWORD: logwatch123
+      DB_NAME: logwatch
+    depends_on:
+      - db
+
+volumes:
+  pgdata:

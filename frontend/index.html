@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LogWatch — AI Anomaly Detection</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0d1117; color: #c9d1d9; font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+    .header { background: #161b22; border-bottom: 1px solid #30363d; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .logo { width: 32px; height: 32px; background: linear-gradient(135deg, #58a6ff, #3fb950); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .title { font-size: 20px; font-weight: 700; color: #f0f6fc; }
+    .badge { background: #1f6feb33; color: #58a6ff; border: 1px solid #1f6feb; border-radius: 20px; padding: 4px 12px; font-size: 12px; font-weight: 600; }
+    .stats { display: flex; gap: 20px; }
+    .stat { text-align: center; }
+    .stat-value { font-size: 24px; font-weight: 700; }
+    .stat-value.normal { color: #3fb950; }
+    .stat-value.anomaly { color: #f85149; }
+    .stat-value.total { color: #58a6ff; }
+    .stat-label { font-size: 11px; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; }
+    .main-container { display: flex; height: calc(100vh - 73px); }
+    .sidebar { width: 200px; background: #161b22; border-right: 1px solid #30363d; padding: 20px; display: flex; flex-direction: column; gap: 4px; }
+    .sidebar-item { padding: 10px 12px; border-radius: 6px; cursor: pointer; color: #8b949e; font-size: 14px; transition: all 0.2s; background: none; border: none; text-align: left; }
+    .sidebar-item:hover { background: #1c2128; color: #c9d1d9; }
+    .sidebar-item.active { background: #1f6feb22; color: #58a6ff; border: 1px solid #1f6feb44; }
+    .content { flex: 1; display: flex; flex-direction: column; }
+    .toolbar { background: #161b22; border-bottom: 1px solid #30363d; padding: 12px 24px; display: flex; align-items: center; gap: 16px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; animation: pulse 2s infinite; }
+    .dot.live { background: #3fb950; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .live-text { color: #3fb950; font-size: 13px; font-weight: 600; }
+    .filter-btn { background: #21262d; border: 1px solid #30363d; color: #c9d1d9; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+    .filter-btn:hover { background: #30363d; }
+    .filter-btn.active { background: #1f6feb33; border-color: #1f6feb; color: #58a6ff; }
+    .log-container { flex: 1; overflow-y: auto; padding: 16px 24px; background: #0d1117; }
+    .log-entry { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 4px; margin-bottom: 2px; font-family: 'Consolas', monospace; font-size: 13px; animation: slideIn 0.3s ease; border-left: 3px solid transparent; }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+    .log-entry.normal { background: #161b22; border-left-color: #3fb95044; color: #7ee787; }
+    .log-entry.anomaly { background: #f8514911; border-left-color: #f85149; color: #f85149; }
+    .log-time { color: #8b949e; font-size: 12px; min-width: 160px; }
+    .log-icon { font-size: 16px; }
+    .log-message { flex: 1; }
+    .log-badge { background: #f8514933; color: #f85149; border: 1px solid #f8514955; border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+    .footer { background: #161b22; border-top: 1px solid #30363d; padding: 8px 24px; display: flex; justify-content: space-between; font-size: 12px; color: #8b949e; }
+    .tab-content { display: none; }
+    .tab-content.active { display: flex; flex-direction: column; flex: 1; }
+    .history-table { width: 100%; border-collapse: collapse; }
+    .history-table th { text-align: left; padding: 8px 12px; border-bottom: 1px solid #30363d; color: #8b949e; font-size: 12px; text-transform: uppercase; }
+    .history-table td { padding: 6px 12px; border-bottom: 1px solid #21262d; font-size: 13px; }
+    ::-webkit-scrollbar { width: 8px; } ::-webkit-scrollbar-track { background: #0d1117; } ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">🛡️</div>
+      <span class="title">LogWatch</span>
+      <span class="badge">AI-Powered</span>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="stat-value total" id="totalCount">0</div><div class="stat-label">Total</div></div>
+      <div class="stat"><div class="stat-value normal" id="normalCount">0</div><div class="stat-label">Normal</div></div>
+      <div class="stat"><div class="stat-value anomaly" id="anomalyCount">0</div><div class="stat-label">Anomalies</div></div>
+    </div>
+  </div>
+
+  <div class="main-container">
+    <div class="sidebar">
+      <button class="sidebar-item active" onclick="switchTab('live')">📊 Live Stream</button>
+      <button class="sidebar-item" onclick="switchTab('history')">📁 History</button>
+    </div>
+
+    <div class="content">
+      <!-- LIVE TAB -->
+      <div class="tab-content active" id="liveTab">
+        <div class="toolbar">
+          <div class="dot live"></div>
+          <span class="live-text">LIVE</span>
+          <button class="filter-btn active" onclick="filterLogs('all')">All</button>
+          <button class="filter-btn" onclick="filterLogs('normal')">Normal</button>
+          <button class="filter-btn" onclick="filterLogs('anomaly')">Anomalies</button>
+          <button class="filter-btn" onclick="clearLogs()">Clear</button>
+        </div>
+        <div class="log-container" id="logContainer">
+          <div style="color:#8b949e; text-align:center; padding-top:100px;">🔍 Waiting for logs...</div>
+        </div>
+      </div>
+
+      <!-- HISTORY TAB -->
+      <div class="tab-content" id="historyTab">
+        <div class="toolbar">
+          <button class="filter-btn active" onclick="loadHistory('all')">All</button>
+          <button class="filter-btn" onclick="loadHistory('anomaly')">Anomalies</button>
+          <button class="filter-btn" onclick="loadHistory('normal')">Normal</button>
+          <button class="filter-btn" onclick="loadHistory('all')">🔄 Refresh</button>
+        </div>
+        <div class="log-container" id="historyContainer">
+          <div style="color:#8b949e; text-align:center; padding-top:100px;">📁 Loading history...</div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <span id="footerLeft">Connected to WebSocket</span>
+        <span id="connectionStatus" style="color:#3fb950;">● Connected</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // === TAB SWITCHING ===
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
+      if (tab === 'live') {
+        document.getElementById('liveTab').classList.add('active');
+        document.querySelector('.sidebar-item:nth-child(1)').classList.add('active');
+      } else {
+        document.getElementById('historyTab').classList.add('active');
+        document.querySelector('.sidebar-item:nth-child(2)').classList.add('active');
+        loadHistory('all');
+      }
+    }
+
+    // === LIVE STREAM ===
+    let total = 0, normals = 0, anomalies = 0, currentFilter = 'all', allLogs = [];
+
+    function filterLogs(type) {
+      currentFilter = type;
+      document.querySelectorAll('#liveTab .filter-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+      renderLogs();
+    }
+
+    function clearLogs() {
+      allLogs = [];
+      renderLogs();
+    }
+
+    function updateStats() {
+      document.getElementById('totalCount').textContent = total;
+      document.getElementById('normalCount').textContent = normals;
+      document.getElementById('anomalyCount').textContent = anomalies;
+    }
+
+    function renderLogs() {
+      const container = document.getElementById('logContainer');
+      const filtered = currentFilter === 'all' ? allLogs : allLogs.filter(l => l.type === currentFilter);
+      if (filtered.length === 0) {
+        container.innerHTML = '<div style="color:#8b949e; text-align:center; padding-top:40px;">No logs</div>';
+        return;
+      }
+      container.innerHTML = filtered.slice(0, 100).map(l => l.html).join('');
+    }
+
+    const ws = new WebSocket(`ws://${location.host}`);
+    ws.onopen = () => {
+      document.getElementById('connectionStatus').innerHTML = '● Connected';
+      document.getElementById('connectionStatus').style.color = '#3fb950';
+    };
+    ws.onclose = () => {
+      document.getElementById('connectionStatus').innerHTML = '● Disconnected';
+      document.getElementById('connectionStatus').style.color = '#f85149';
+    };
+    ws.onmessage = (e) => {
+      const data = JSON.parse(e.data);
+      const isAnomaly = data.anomaly;
+      const time = data.text.split(' - ')[0];
+      const message = data.text.split(' - ').slice(1).join(' - ');
+      const entryClass = isAnomaly ? 'anomaly' : 'normal';
+      const icon = isAnomaly ? '⚠️' : '✅';
+      const badge = isAnomaly ? '<span class="log-badge">ANOMALY</span>' : '';
+      const html = `<div class="log-entry ${entryClass}"><span class="log-time">${time}</span><span class="log-icon">${icon}</span><span class="log-message">${message}</span>${badge}</div>`;
+      allLogs.unshift({ html, type: isAnomaly ? 'anomaly' : 'normal' });
+      total++; isAnomaly ? anomalies++ : normals++;
+      updateStats();
+      renderLogs();
+    };
+
+    // === HISTORY ===
+    async function loadHistory(type) {
+      document.querySelectorAll('#historyTab .filter-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+      const container = document.getElementById('historyContainer');
+      container.innerHTML = '<div style="color:#8b949e; text-align:center; padding-top:40px;">Loading...</div>';
+      try {
+        const res = await fetch(`/api/logs?limit=200&type=${type}`);
+        const logs = await res.json();
+        if (logs.length === 0) {
+          container.innerHTML = '<div style="color:#8b949e; text-align:center; padding-top:40px;">No logs found</div>';
+          return;
+        }
+        container.innerHTML = logs.map(l => {
+          const cls = l.is_anomaly ? 'anomaly' : 'normal';
+          const icon = l.is_anomaly ? '⚠️' : '✅';
+          const badge = l.is_anomaly ? '<span class="log-badge">ANOMALY</span>' : '';
+          const time = new Date(l.timestamp).toISOString().replace('T', ' ').substring(0, 19);
+          return `<div class="log-entry ${cls}"><span class="log-time">${time}</span><span class="log-icon">${icon}</span><span class="log-message">${l.message}</span>${badge}</div>`;
+        }).join('');
+      } catch (err) {
+        container.innerHTML = '<div style="color:#f85149; text-align:center; padding-top:40px;">Failed to load history</div>';
+      }
+    }
+
+    // Load stats on page load
+    fetch('/api/stats').then(r => r.json()).then(s => {
+      total = parseInt(s.total) || 0;
+      normals = parseInt(s.normal) || 0;
+      anomalies = parseInt(s.anomalies) || 0;
+      updateStats();
+    });
+  </script>
+</body>
+</html>
