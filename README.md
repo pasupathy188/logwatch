@@ -54,5 +54,3 @@ A permanent Hugging Face Space will be available on 1 August: `https://pasupathy
 git clone https://github.com/pasupathy188/logwatch.git
 cd logwatch
 docker compose up --build
-
----
