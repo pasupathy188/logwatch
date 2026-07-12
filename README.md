@@ -23,8 +23,12 @@ A real‑time log monitoring system that uses AI to automatically detect anomali
 *Temporary ngrok tunnel — you may see a one‑time security notice. Just click "Visit Site".  
 A permanent Hugging Face Space will be available on 1 August: `https://pasupathy188-logwatch.hf.space`.*
 
-## 📸 Screenshot
-![LogWatch Dashboard](screenshots/dashboard.png)
+## 📸 Screenshots
+**Live Stream**  
+![Live Dashboard](screenshots/dashboard-live.png)
+
+**History Tab**  
+![History Tab](screenshots/dashboard-history.png)
 
 ## 🎯 Features
 - 🔴 **Real‑time Anomaly Detection** – AI engine spots unusual log patterns instantly
