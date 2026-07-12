@@ -36,6 +36,22 @@ A permanent Hugging Face Space will be available on 1 August: `https://pasupathy
 - 📡 **WebSocket Streaming** – Instant log delivery to browser
 
 ## 🏗️ Architecture
+┌─────────────┐ WebSocket ┌─────────────┐ HTTP ┌─────────────┐
+│ Generator │ ──────────────→ │ Backend │ ────────→ │ AI Service │
+│ (Node.js) │ │ (Node.js) │ │ (Python) │
+└─────────────┘ └──────┬──────┘ └─────────────┘
+│
+┌─────▼──────┐
+│ PostgreSQL │
+│ Database │
+└────────────┘
+│
+┌─────▼──────┐
+│ Frontend │
+│ Dashboard │
+└────────────┘
+
+text
 
 ## 🛠️ Tech Stack
 | Category | Technology |
@@ -54,3 +70,29 @@ A permanent Hugging Face Space will be available on 1 August: `https://pasupathy
 git clone https://github.com/pasupathy188/logwatch.git
 cd logwatch
 docker compose up --build
+Open http://localhost:5000
+
+📡 API Endpoints
+Endpoint	Method	Description
+/api/logs	GET	Get stored logs
+/api/logs?type=anomaly	GET	Get anomalies only
+/api/stats	GET	Get log statistics
+/api/logs	DELETE	Clear all logs
+🔮 Future Improvements
+Prometheus & Grafana monitoring
+
+Slack/Discord alert integration
+
+Terraform for cloud infrastructure
+
+Advanced ML model (LSTM autoencoder)
+
+Kubernetes deployment
+
+📝 License
+MIT License
+
+👤 Author
+PASUPATHY RAM P
+DevOps | AWS | Docker | AI/ML
+---
